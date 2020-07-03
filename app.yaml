@@ -1,0 +1,22 @@
+service: patang-notification
+runtime: nodejs10
+env: standard
+
+manual_scaling:
+  instances: 1
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+handlers:
+- url: /.*
+  secure: always
+  redirect_http_response_code: 301
+  script: auto
+env_variables:
+  ES_HOST: "104.154.185.206"
+  ES_PROTOCOL: "http"
+  ES_PORT: "9200"
+  ES_USER: "elastic"
+  ES_PASSWORD: "secure@elastic123"
+  PATANG_FIREBASE_ADMIN_SDK: "./patang-firebase-admin-sdk.json"
