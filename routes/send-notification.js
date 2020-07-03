@@ -45,6 +45,35 @@ const sendNotification = async (req, res) => {
 
     else if (req.body.notificationType === 'follow_user') {
 
+        // Like Post Notification
+        let [fromUser, toUser] = await getDocumentDetails([{
+            _index: 'user',
+            _id: req.body.notificationData.follower,
+            _source: ["fullName", "userId", "profilePic"]
+        }, {
+            _index: 'user',
+            _id: req.body.notificationData.following,
+            _source: ["registrationToken", "userId"]
+        }]).catch(e => {
+            console.log('rejected', e);
+            return res.status(500);
+        });
+
+        // Notification payload compulsary
+        notificationPayload = {
+            title: `Follow Notification`,
+            body: `${fromUser._source.fullName} followed your profile`
+        }
+
+        // CustomData post id for performing app activity, notificationAction, image
+        notificationCustomData = {
+            toUser: toUser._source.userId,
+            postId: post._id,
+            notificationAction: 'OPEN_PROFILE',
+            image: `${fromUser._source.profilePic}`
+        }
+
+        registrationToken = toUser._source.registrationToken;
     }
 
     await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).catch(e => {
