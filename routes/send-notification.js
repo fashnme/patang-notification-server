@@ -2,6 +2,7 @@ const { sendFirebaseNotification } = require("../controllers/send-firebase-notif
 const { getDocumentDetails } = require("./../controllers/get-document-details");
 const { esClient } = require("../conf/elastic-conf");
 
+const esQueryObjectForDoc = (_index, _id, _source) => { return { _index, _id, _source } };
 const sendNotification = async (req, res) => {
 
     let notificationPayload, notificationCustomData, registrationToken;
@@ -9,22 +10,14 @@ const sendNotification = async (req, res) => {
     if (req.body.notificationType === 'like_post') {
 
         // Like Post Notification
-        let [fromUser, toUser, post] = await getDocumentDetails([{
-            _index: 'user',
-            _id: req.body.notificationData.userId,
-            _source: ["fullName"]
-        }, {
-            _index: 'user',
-            _id: req.body.notificationData.posterId,
-            _source: ["registrationToken", "userId"]
-        }, {
-            _index: 'post',
-            _id: req.body.notificationData.postId,
-            _source: ["uploadUrl"]
-        }]).catch(e => {
-            console.log('rejected', e);
-            return res.status(500);
-        });
+        let [fromUser, toUser, post] = await getDocumentDetails([
+            esQueryObjectForDoc('user', req.body.notificationData.userId, ["fullName"]),
+            esQueryObjectForDoc('user', req.body.notificationData.posterId, ["registrationToken"]),
+            esQueryObjectForDoc('post', req.body.notificationData.postId, ["uploadUrl"])])
+            .catch(e => {
+                console.log('rejected', e);
+                return res.status(500);
+            });
 
         // Notification payload compulsary
         notificationPayload = {
@@ -34,7 +27,7 @@ const sendNotification = async (req, res) => {
 
         // CustomData post id for performing app activity, notificationAction, image
         notificationCustomData = {
-            toUser: toUser._source.userId,
+            toUser: toUser._id,
             postId: post._id,
             notificationAction: 'OPEN_POST',
             image: `${post._source.uploadUrl}`
@@ -45,16 +38,11 @@ const sendNotification = async (req, res) => {
 
     else if (req.body.notificationType === 'follow_user') {
 
-        // Like Post Notification
-        let [fromUser, toUser] = await getDocumentDetails([{
-            _index: 'user',
-            _id: req.body.notificationData.follower,
-            _source: ["fullName", "userId", "profilePic"]
-        }, {
-            _index: 'user',
-            _id: req.body.notificationData.following,
-            _source: ["registrationToken", "userId"]
-        }]).catch(e => {
+        // Follow User Notification
+        let [fromUser, toUser] = await getDocumentDetails([
+            esQueryObjectForDoc('user', req.body.notificationData.follower, ["fullName", "userId", "profilePic"]),
+            esQueryObjectForDoc('user', req.body.notificationData.following, ["registrationToken"]),
+        ]).catch(e => {
             console.log('rejected', e);
             return res.status(500);
         });
@@ -67,8 +55,8 @@ const sendNotification = async (req, res) => {
 
         // CustomData post id for performing app activity, notificationAction, image
         notificationCustomData = {
-            toUser: toUser._source.userId,
-            postId: post._id,
+            toUser: toUser._id,
+            userId: toUser._id,
             notificationAction: 'OPEN_PROFILE',
             image: `${fromUser._source.profilePic}`
         }
