@@ -13,7 +13,7 @@ const sendNotification = async (req, res) => {
         let [fromUser, toUser, post] = await getDocumentDetails([
             esQueryObjectForDoc('user', req.body.notificationData.userId, ["fullName"]),
             esQueryObjectForDoc('user', req.body.notificationData.posterId, ["registrationToken"]),
-            esQueryObjectForDoc('post', req.body.notificationData.postId, ["uploadUrl"])])
+            esQueryObjectForDoc('post', req.body.notificationData.postId, ["uploadUrl", "thumbnailUrl"])])
             .catch(e => {
                 console.log('rejected', e);
                 return res.status(500);
@@ -30,7 +30,7 @@ const sendNotification = async (req, res) => {
             toUser: toUser._id,
             postId: post._id,
             notificationAction: 'OPEN_POST',
-            image: `${post._source.uploadUrl}`
+            image: post._source.thumbnailUrl || post._source.uploadUrl
         }
 
         registrationToken = toUser._source.registrationToken;
@@ -58,7 +58,7 @@ const sendNotification = async (req, res) => {
             toUser: toUser._id,
             userId: toUser._id,
             notificationAction: 'OPEN_PROFILE',
-            image: `${fromUser._source.profilePic}`
+            image: fromUser._source.profilePic
         }
 
         registrationToken = toUser._source.registrationToken;
