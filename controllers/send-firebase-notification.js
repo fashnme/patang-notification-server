@@ -7,7 +7,7 @@ const sendFirebaseNotification = async (registrationToken, notificationPayload, 
         android: {
             ttl: 86400,
             notification: {
-                click_action: notificationCustomData.notificationAction,
+                // click_action: notificationCustomData.notificationAction,
                 imageUrl: notificationCustomData.image
             }
         },

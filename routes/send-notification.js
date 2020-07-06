@@ -8,77 +8,110 @@ const sendNotification = async (req, res) => {
     let notificationPayload, notificationCustomData, registrationToken;
 
     if (req.body.notificationType === 'like_post') {
+        try {
 
-        // Like Post Notification
-        let [fromUser, toUser, post] = await getDocumentDetails([
-            esQueryObjectForDoc('user', req.body.notificationData.userId, ["fullName"]),
-            esQueryObjectForDoc('user', req.body.notificationData.posterId, ["registrationToken"]),
-            esQueryObjectForDoc('post', req.body.notificationData.postId, ["uploadUrl", "thumbnailUrl"])])
-            .catch(e => {
+            let { userId, posterId, postId } = req.body.notificationData;
+
+            // Like Post Notification
+            let [fromUser, toUser, post] = await getDocumentDetails([
+                esQueryObjectForDoc('user', userId, ["fullName"]),
+                esQueryObjectForDoc('user', posterId, ["registrationToken"]),
+                esQueryObjectForDoc('post', postId, ["uploadUrl", "thumbnailUrl"])
+            ]).catch(e => {
                 console.log('rejected', e);
                 return res.status(500);
             });
 
-        // Notification payload compulsary
-        notificationPayload = {
-            title: `Like Notification`,
-            body: `${fromUser._source.fullName} liked your post`
+            // Notification payload compulsary
+            notificationPayload = {
+                title: `Like Notification`,
+                body: `${fromUser._source.fullName} liked your post`
+            }
+
+            // CustomData post id for performing app activity, notificationAction, image
+            notificationCustomData = {
+                toUser: toUser._id,
+                postId: post._id,
+                notificationAction: req.body.notificationType,
+                image: post._source.thumbnailUrl || post._source.uploadUrl
+            }
+
+            registrationToken = toUser._source.registrationToken;
+
+
+        } catch (error) {
+            return res.status(500).send('NotificationBody is Wrong');
         }
 
-        // CustomData post id for performing app activity, notificationAction, image
-        notificationCustomData = {
-            toUser: toUser._id,
-            postId: post._id,
-            notificationAction: 'OPEN_POST',
-            image: post._source.thumbnailUrl || post._source.uploadUrl
-        }
-
-        registrationToken = toUser._source.registrationToken;
     }
 
     else if (req.body.notificationType === 'follow_user') {
 
-        // Follow User Notification
-        let [fromUser, toUser] = await getDocumentDetails([
-            esQueryObjectForDoc('user', req.body.notificationData.follower, ["fullName", "userId", "profilePic"]),
-            esQueryObjectForDoc('user', req.body.notificationData.following, ["registrationToken"]),
-        ]).catch(e => {
-            console.log('rejected', e);
-            return res.status(500);
-        });
+        try {
+            let { follower, following } = req.body.notificationData;
 
-        // Notification payload compulsary
-        notificationPayload = {
-            title: `Follow Notification`,
-            body: `${fromUser._source.fullName} followed your profile`
+            // Follow User Notification
+            let [fromUser, toUser] = await getDocumentDetails([
+                esQueryObjectForDoc('user', follower, ["fullName", "userId", "profilePic"]),
+                esQueryObjectForDoc('user', following, ["registrationToken"]),
+            ]).catch(e => {
+                console.log('rejected', e);
+                return res.status(500);
+            });
+
+            // Notification payload compulsary
+            notificationPayload = {
+                title: `Follow Notification`,
+                body: `${fromUser._source.fullName} followed your profile`
+            }
+
+            // CustomData post id for performing app activity, notificationAction, image
+            notificationCustomData = {
+                toUser: toUser._id,
+                userId: toUser._id,
+                notificationAction: req.body.notificationType,
+                image: fromUser._source.profilePic
+            }
+
+            registrationToken = toUser._source.registrationToken;
+
+        } catch (e) {
+            return res.status(500).send('NotificationBody is Wrong');
+
         }
-
-        // CustomData post id for performing app activity, notificationAction, image
-        notificationCustomData = {
-            toUser: toUser._id,
-            userId: toUser._id,
-            notificationAction: 'OPEN_PROFILE',
-            image: fromUser._source.profilePic
-        }
-
-        registrationToken = toUser._source.registrationToken;
     }
 
-    await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).catch(e => {
-        console.log('here', e);
-        return res.status(500).end();
-    });
-
-    await esClient.index({
-        index: 'notification',
-        body: {
-            timeStamp: new Date(),
-            ...notificationCustomData,
-            ...notificationPayload
+    await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).then(data => {
+        esClient.index({
+            index: 'notification',
+            body: {
+                timeStamp: new Date(),
+                ...notificationCustomData,
+                ...notificationPayload
+            }
+        });
+    }).catch(e => {
+        console.log(e);
+        if (registrationToken.length == 0) {
+            return res.status(500).send('Wrong registration token');
+        } else {
+            esClient.update({
+                index: 'user',
+                id: notificationCustomData.toUser,
+                body: {
+                    doc: {
+                        registrationToken: ''
+                    }
+                }
+            });
         }
+
+
+        return res.status(500).send('Wrong registration token');
     });
 
     return res.status(200).end();
+
 }
 
 module.exports = { sendNotification }

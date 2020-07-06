@@ -15,7 +15,7 @@ const getDocumentDetails = async (docsToFetch) => {
 
     if (error) {
         return new Promise((resolve, reject) => {
-            reject('Error in one of document');
+            reject(data.docs);
         })
     }
     return data.docs;
