@@ -44,7 +44,6 @@ const sendNotification = async (req, res) => {
         }
 
     }
-
     else if (req.body.notificationType === 'follow_user') {
 
         try {
@@ -80,14 +79,17 @@ const sendNotification = async (req, res) => {
 
         }
     }
+    else {
+        return res.status(400).end();
+    }
 
     await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).then(data => {
         esClient.index({
             index: 'notification',
             body: {
-                timeStamp: new Date(),
                 ...notificationCustomData,
-                ...notificationPayload
+                ...notificationPayload,
+                timeStamp: new Date(),
             }
         });
     }).catch(e => {

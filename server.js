@@ -26,7 +26,7 @@ app.use(cors({ origin: "*" }));
 
 router(app);
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8081;
 
 server.listen(port, () => {
     console.log(`\x1b[1mServer Started at Port: ${port}`);
