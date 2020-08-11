@@ -31,7 +31,7 @@ const sendBulkNotification = async (req, res) => {
             notificationCustomData = {
                 toUser: toUser._id,
                 postId: post._id,
-                notificationAction: 'OPEN_POST',
+                notificationAction: 'like_post',
                 image: post._source.thumbnailUrl || post._source.uploadUrl
             }
 

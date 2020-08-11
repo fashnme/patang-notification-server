@@ -20,3 +20,5 @@ env_variables:
   ES_USER: "elastic"
   ES_PASSWORD: "secure@elastic123"
   PATANG_FIREBASE_ADMIN_SDK: "./patang-firebase-admin-sdk.json"
+  ES_HOST_PRODUCT: "35.203.36.107"
+

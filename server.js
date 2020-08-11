@@ -17,7 +17,6 @@ var app = express();
 var server = http.createServer(app);
 server.timeout = 30000;
 
-
 //Registering Middleware
 app.use(bodyParser.json({ type: '*/*', limit: '50mb', parameterLimit: 50000 }));
 // app.use(morgan('dev'));

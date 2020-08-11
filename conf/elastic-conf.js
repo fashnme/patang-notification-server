@@ -1,6 +1,7 @@
 const elasticsearch = require('elasticsearch');
 
-const  esClient =  new elasticsearch.Client({  host: [
+const esClient = new elasticsearch.Client({
+  host: [
     {
       host: process.env.ES_HOST,
       protocol: process.env.ES_PROTOCOL,
@@ -10,4 +11,17 @@ const  esClient =  new elasticsearch.Client({  host: [
   ]
 });
 
-module.exports = {esClient}
+// API VERSION IS SPECIFICALLY SET IN THIS CASE AS IT REQUIRES different 'type' name
+// in product index 
+const esClientProduct = new elasticsearch.Client({
+  host: [
+    {
+      host: process.env.ES_HOST_PRODUCT,
+      protocol: 'http',
+      port: '9243'
+    }
+  ],
+  apiVersion: '6.8'
+});
+
+module.exports = { esClient, esClientProduct }
