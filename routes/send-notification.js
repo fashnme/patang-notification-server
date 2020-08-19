@@ -1,6 +1,6 @@
 const { sendFirebaseNotification } = require("../controllers/send-firebase-notification");
 const { getDocumentDetails } = require("./../controllers/get-document-details");
-const { esClient, esClientProduct } = require("../conf/elastic-conf");
+const { esClient } = require("../conf/elastic-conf");
 
 const esQueryObjectForDoc = (_index, _id, _source) => { return { _index, _id, _source } };
 const sendNotification = async (req, res) => {
@@ -34,12 +34,11 @@ const sendNotification = async (req, res) => {
                 likerId: userId,
                 postId: postId,
                 notificationAction: req.body.notificationType,
-                image1: fromUser.profilePic,
+                image1: fromUser._source.profilePic,
                 image2: post._source.thumbnailUrl || post._source.uploadUrl
             }
 
             registrationToken = toUser._source.registrationToken;
-
 
         } catch (error) {
             return res.status(500).send('NotificationBody is Wrong');
@@ -73,7 +72,7 @@ const sendNotification = async (req, res) => {
                 likerId: userId,
                 postId: postId,
                 notificationAction: req.body.notificationType,
-                image1: fromUser.profilePic,
+                image1: fromUser._source.profilePic,
                 image2: post._source.thumbnailUrl || post._source.uploadUrl
             }
 
@@ -259,6 +258,40 @@ const sendNotification = async (req, res) => {
         }
 
     }
+    else if (req.body.notificationType === 'open_link') {
+        try {
+            let { userId, link, body } = req.body.notificationData;
+
+            // Follow User Notification
+            let [toUser, fromPost] = await getDocumentDetails([
+                esQueryObjectForDoc('user', userId, ["registrationToken"]),
+            ]).catch(e => {
+                console.log('rejected', e);
+                return res.status(500);
+            });
+
+            // Notification payload compulsary
+            notificationPayload = {
+                title: `Patang Notification`,
+                body: `${body}`
+            }
+
+            // CustomData post id for performing app activity, notificationAction, image
+            notificationCustomData = {
+                toUser: userId,
+                link: link,
+                notificationAction: req.body.notificationType,
+                image1: `${req.body.notificationData.image || 'https://res.cloudinary.com/patang1/image/upload/v1597860433/patang_hcztmo.png'}`
+            }
+
+            registrationToken = toUser._source.registrationToken;
+
+        } catch (e) {
+            return res.status(500).send('NotificationBody is Wrong');
+
+        }
+
+    }
     else {
         return res.status(400).end();
     }
@@ -287,8 +320,6 @@ const sendNotification = async (req, res) => {
                 }
             });
         }
-
-
         return res.status(500).send('Wrong registration token');
     });
 
