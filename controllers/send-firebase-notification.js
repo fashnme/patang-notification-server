@@ -9,15 +9,23 @@ const sendFirebaseNotification = async (registrationToken, notificationPayload, 
         android: {
             ttl: 86400,
             notification: {
-                imageUrl: notificationCustomData.image2 || notificationCustomData.image1
-            }
+                imageUrl: notificationCustomData.image2 || notificationCustomData.image1,
+
+            },
         },
-        data: notificationCustomData
+        data: {
+            ...notificationCustomData,
+            ...notificationPayload,
+        }
+
     }
-    console.log(notification)
-    return admin.messaging().send(notification).catch(e => {
+    let data = await admin.messaging().send(notification).catch(e => { })
+    if (!data) {
         throw e;
-    });
+
+    }
+    return notification.data;
+
 }
 
 module.exports = { sendFirebaseNotification }

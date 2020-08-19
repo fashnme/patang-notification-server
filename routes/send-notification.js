@@ -263,7 +263,7 @@ const sendNotification = async (req, res) => {
             let { userId, link, body } = req.body.notificationData;
 
             // Follow User Notification
-            let [toUser, fromPost] = await getDocumentDetails([
+            let [toUser] = await getDocumentDetails([
                 esQueryObjectForDoc('user', userId, ["registrationToken"]),
             ]).catch(e => {
                 console.log('rejected', e);
@@ -296,35 +296,37 @@ const sendNotification = async (req, res) => {
         return res.status(400).end();
     }
 
-    await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).then(data => {
-        esClient.index({
+
+    if (registrationToken.length === 0) {
+        return res.status(500).send('Empty registration token');
+    }
+
+    let sentNotificationData = await sendFirebaseNotification(registrationToken, notificationPayload, notificationCustomData).catch(e => {
+        console.log(e);
+    })
+
+    if (sentNotificationData) {
+        await esClient.index({
             index: 'notification',
             body: {
-                ...notificationCustomData,
-                ...notificationPayload,
+                ...sentNotificationData,
                 timeStamp: new Date(),
             }
         });
-    }).catch(e => {
-        console.log(e);
-        if (registrationToken.length == 0) {
-            return res.status(500).send('Wrong registration token');
-        } else {
-            esClient.update({
-                index: 'user',
-                id: notificationCustomData.toUser,
-                body: {
-                    doc: {
-                        registrationToken: ''
-                    }
+        return res.status(200).end();
+
+    } else {
+        await esClient.update({
+            index: 'user',
+            id: notificationCustomData.toUser,
+            body: {
+                doc: {
+                    registrationToken: ''
                 }
-            });
-        }
+            }
+        });
         return res.status(500).send('Wrong registration token');
-    });
-
-    return res.status(200).end();
-
+    }
 }
 
 module.exports = { sendNotification }
