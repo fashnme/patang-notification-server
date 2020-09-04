@@ -292,6 +292,40 @@ const sendNotification = async (req, res) => {
         }
 
     }
+    else if (req.body.notificationType === 'open_personal_store') {
+        try {
+            let { userId, productId, productImage } = req.body.notificationData;
+
+            // Follow User Notification
+            let [toUser, productImage] = await getDocumentDetails([
+                esQueryObjectForDoc('user', userId, ["registrationToken"]),
+            ]).catch(e => {
+                console.log('rejected', e);
+                return res.status(500);
+            });
+
+            // Notification payload compulsary
+            notificationPayload = {
+                title: `Patang Notification: Personal Store`,
+                body: `We found this ${productTitle}`
+            }
+
+            // CustomData post id for performing app activity, notificationAction, image
+            notificationCustomData = {
+                toUser: userId,
+                productId: productId,
+                notificationAction: req.body.notificationType,
+                image1: productImage
+            }
+
+            registrationToken = toUser._source.registrationToken;
+
+        } catch (e) {
+            return res.status(500).send('NotificationBody is Wrong');
+
+        }
+
+    }
     else {
         return res.status(400).end();
     }
