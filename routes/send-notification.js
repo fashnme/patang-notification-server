@@ -154,6 +154,38 @@ const sendNotification = async (req, res) => {
 
         }
     }
+    else if (req.body.notificationType === 'open_orders') {
+        try {
+            let { userId, productImage, body } = req.body.notificationData;
+
+            // Follow User Notification
+            let [toUser] = await getDocumentDetails([
+                esQueryObjectForDoc('user', userId, ["registrationToken"]),
+            ]).catch(e => {
+                console.log('rejected', e);
+                return res.status(500);
+            });
+
+            // Notification payload compulsary
+            notificationPayload = {
+                title: `Patang Notification | Orders`,
+                body: `${body}`
+            }
+
+            // CustomData post id for performing app activity, notificationAction, image
+            notificationCustomData = {
+                toUser: userId,
+                notificationAction: req.body.notificationType,
+                image1: productImage
+            }
+
+            registrationToken = toUser._source.registrationToken;
+
+        } catch (e) {
+            return res.status(500).send('NotificationBody is Wrong');
+
+        }
+    }
     else if (req.body.notificationType === 'patang_message') {
         try {
             let { userId, image, body, title } = req.body.notificationData;
@@ -175,7 +207,7 @@ const sendNotification = async (req, res) => {
             // CustomData post id for performing app activity, notificationAction, image
             notificationCustomData = {
                 toUser: userId,
-                referredUserId: referredUserId,
+                referredUserId: '',
                 notificationAction: req.body.notificationType,
                 image1: image
             }
@@ -297,7 +329,7 @@ const sendNotification = async (req, res) => {
             let { userId, productId, productImage } = req.body.notificationData;
 
             // Follow User Notification
-            let [toUser, productImage] = await getDocumentDetails([
+            let [toUser] = await getDocumentDetails([
                 esQueryObjectForDoc('user', userId, ["registrationToken"]),
             ]).catch(e => {
                 console.log('rejected', e);
@@ -330,7 +362,7 @@ const sendNotification = async (req, res) => {
         return res.status(400).end();
     }
 
-
+    // console.log('registrationtoken', registrationToken)
     if (registrationToken.length === 0) {
         return res.status(500).send('Empty registration token');
     }
@@ -350,15 +382,6 @@ const sendNotification = async (req, res) => {
         return res.status(200).end();
 
     } else {
-        await esClient.update({
-            index: 'user',
-            id: notificationCustomData.toUser,
-            body: {
-                doc: {
-                    registrationToken: ''
-                }
-            }
-        });
         return res.status(500).send('Wrong registration token');
     }
 }
