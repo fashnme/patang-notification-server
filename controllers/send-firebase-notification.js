@@ -33,10 +33,11 @@ const sendFirebaseNotification = async (registrationToken, notificationPayload, 
 
         delete notification['token'];
         // console.log({ ...notification, topic: 'randomtopic' })
-        // let data = await admin.messaging().send({ ...notification, topic: 'randomtopic' }).catch(e => { console.log(e) })
-        // if (!data) {
-        //     return null
-        // }
+        // Sending notification to bulk
+        let data = await admin.messaging().send({ ...notification, topic: 'randomtopic' }).catch(e => { console.log(e) })
+        if (!data) {
+            return null
+        }
         return notification.data;
 
 
