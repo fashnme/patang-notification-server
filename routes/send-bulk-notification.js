@@ -104,7 +104,7 @@ const sendBulkNotification = async (req, res) => {
 
             // Follow User Notification
             let [fromPost] = await getDocumentDetails([
-                esQueryObjectForDoc('user', postId, ["thumbnailUrl", "uploadUrl"])
+                esQueryObjectForDoc('post', postId, ["thumbnailUrl", "uploadUrl"])
             ]).catch(e => {
                 console.log('rejected', e);
                 return res.status(500);
