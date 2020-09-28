@@ -104,7 +104,7 @@ const sendBulkNotification = async (req, res) => {
 
             // Follow User Notification
             let [fromPost] = await getDocumentDetails([
-                esQueryObjectForDoc('post', postId, ["thumbnailUrl", "uploadUrl"])
+                esQueryObjectForDoc('post', postId, ["thumbnailUrl", "uploadUrl", "caption"])
             ]).catch(e => {
                 console.log('rejected', e);
                 return res.status(500);
@@ -113,7 +113,7 @@ const sendBulkNotification = async (req, res) => {
             // Notification payload compulsary
             notificationPayload = {
                 title: `Patang: Trending Post`,
-                body: `Check out this trending post ${fromPost._source.caption}`
+                body: `Check out this trending post ${fromPost._source.caption || ''}`
             }
 
             // CustomData post id for performing app activity, notificationAction, image
